@@ -8,7 +8,7 @@
 % Read a file and find N most frequent pairs with a gap constant G
 % Return the found pairs as a list
 
--module(find_pairs).
+-module(pairs).
 
 -export([sort/1, print/1, take/2, find_pairs/2, find_pairs_file/2]).
 
