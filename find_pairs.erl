@@ -10,11 +10,28 @@
 
 -module(find_pairs).
 
--export([find_pairs/2, find_pairs_file/2]).
+-export([sort/1, print/1, take/2, find_pairs/2, find_pairs_file/2]).
 
 % Map manipulation functions
-% @todo add a function to sort a map based on the value count
-% @todo add a function to take N most common elements from value map
+
+% Sort the map and return a list with the biggest element at top
+% returns a list of {c, c, int} tuples
+sort(Map) ->
+    L = maps:to_list(Map),
+    Convert = fun({{A, B}, C}) -> {A, B, C} end,
+    L1 = lists:map(Convert, L),
+    lists:reverse(lists:keysort(3, L1)).
+
+% A function to take N most common elements from value map
+% List version first
+take(_, 0) -> [];
+take([H | T], N) ->
+    [H|take(T, N-1)];
+% Then a map version
+take(Map, N) ->
+    take(sort(Map), N).
+
+
 % @todo add a function to drop eleemtns with less than X values
 
 make_pairs(_, [], M) ->
