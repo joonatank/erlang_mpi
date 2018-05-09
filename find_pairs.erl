@@ -12,10 +12,16 @@
 
 -export([find_pairs/2, find_pairs_file/2]).
 
+% Map manipulation functions
+% @todo add a function to sort a map based on the value count
+% @todo add a function to take N most common elements from value map
+% @todo add a function to drop eleemtns with less than X values
+
 make_pairs(_, [], M) ->
     M;
 % @todo fix hardcoded space with proper whitespace
-make_pairs(32, List, Map) ->
+% Need to use an accepted characters set instead (a-z, A-Z, I think)
+make_pairs(32, _, Map) ->
     Map;
 make_pairs(X, [32 | T], Map) ->
     make_pairs(X, T, Map);
@@ -42,10 +48,8 @@ pairs(_, 0, _) ->
 % one element left nothing to match
 pairs([_H], _, Map) ->
     Map;
-%pairs([32, X | T], G, Map) ->
-%    pairs([X | T], G, Map);
-%pairs([_, 32 | T], G, Map) ->
-%    pairs(T, G, Map);
+pairs([32, X | T], G, Map) ->
+    pairs([X | T], G, Map);
 pairs([H | T], G, Map) ->
     M = make_pairs(H, lists:sublist(T, G), Map),
     pairs(T, G, M).
@@ -55,15 +59,22 @@ print(Map) ->
     maps:fold(F, 0, Map).
 
 
-find_pairs(Line, G) ->
-    %Line = "Im on repeat, on repeat, on repeat",
-    % @todo need to sort the array by most occurances
-    Res = pairs(Line, G, #{}),
-    print(Res).
+% Returns an unsorted map of {c1, c2} character pair -> value
+find_pairs([], _, Map) ->
+    Map;
+find_pairs([H | T], G, Map) ->
+    Res = pairs(H, G, Map),
+    find_pairs(T, G, Map),
+    Res.
+
+find_pairs(List, G) ->
+    find_pairs(List, G, #{}).
 
 find_pairs_file(Filename, G) ->
     % Read file into a list
     {_,Cont} = file:read_file(Filename),
-    Res = pairs(Cont, G, #{}),
-    print(Res).
+    % FIXME this only works on UNIX files, need \r and \n\r too
+    X = [binary_to_list(Bin) || Bin <- binary:split(Cont,<<"\n">>,[global]),
+                           Bin =/= << >>],
+    find_pairs(X, G).
 
