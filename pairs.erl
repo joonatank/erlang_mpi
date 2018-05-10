@@ -71,7 +71,10 @@ pairs([H | T], G, Map) ->
     M = make_pairs(H, lists:sublist(T, G), Map),
     pairs(T, G, M).
 
-print(Map) ->
+print(List) when is_list(List) ->
+    F = fun({X, Y, Z}, _) -> io:format("{~c, ~c} => ~w~n", [X, Y, Z]) end,
+    lists:foldl(F, 0, List);
+print(Map) when is_map(Map) ->
     F = fun({X, Y}, V, _) -> io:format("{~c, ~c} => ~w~n", [X, Y, V]) end,
     maps:fold(F, 0, Map).
 
@@ -87,6 +90,8 @@ find_pairs([H | T], G, Map) ->
 find_pairs(List, G) ->
     find_pairs(List, G, #{}).
 
+% @todo this doesn't seem to work properly: test with G=2 and G=5 (oh with G=10 it gives different results
+%   create an artificial test file that we have hand counted.
 find_pairs_file(Filename, G) ->
     % Read file into a list
     {_,Cont} = file:read_file(Filename),
