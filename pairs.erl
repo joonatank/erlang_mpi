@@ -10,7 +10,7 @@
 
 -module(pairs).
 
--export([sort/1, print/1, take/2, find_pairs/2, find_pairs_file/2]).
+-export([sort/1, print/1, take/2, merge/2, find_pairs/2, find_pairs_file/2]).
 
 % Map manipulation functions
 
@@ -31,8 +31,11 @@ take([H | T], N) ->
 take(Map, N) ->
     take(sort(Map), N).
 
-
 % @todo add a function to drop eleemtns with less than X values
+
+% merge
+merge(M1, M2) ->
+    maps:fold(fun(K, V, Map) -> maps:update_with(K, fun(X) -> X + V end, V, Map) end, M1, M2).
 
 make_pairs(_, [], M) ->
     M;
@@ -83,7 +86,7 @@ print(Map) when is_map(Map) ->
 find_pairs([], _, Map) ->
     Map;
 find_pairs([H | T], G, Map) ->
-    Res = pairs(H, G, Map),
+    Res = pairs([H | T], G, Map),
     find_pairs(T, G, Map),
     Res.
 
