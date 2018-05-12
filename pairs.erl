@@ -34,8 +34,12 @@ take(Map, N) ->
 % @todo add a function to drop eleemtns with less than X values
 
 % merge
-merge(M1, M2) ->
-    maps:fold(fun(K, V, Map) -> maps:update_with(K, fun(X) -> X + V end, V, Map) end, M1, M2).
+merge(M1, M2) when not is_list(M1) ->
+    maps:fold(fun(K, V, Map) -> maps:update_with(K, fun(X) -> X + V end, V, Map) end, M1, M2);
+% list of maps merge
+merge([], Map) -> #{};
+merge([H | T], Map) ->
+    merge(H, merge(T, Map)).
 
 make_pairs(_, [], M) ->
     M;
@@ -55,25 +59,6 @@ make_pairs(X, [H | T], M) ->
             Map#{Pair => 1}
     end.
 
-% We need (char, char) -> N type of a map
-% counts the amount of characters withing distance of gap constant G
-% @todo count to more than 1 (cap constant)
-% @todo do we filter whitespace and misc characters (like ')?
-% Matches only forward that is abba => {a, b} => 2, {b, b} => 1, {b, a} => 1, {a, a} => 1
-% Skips whitespace but counts it in to the gap constant (logical distance)
-%
-% Should never happen
-pairs(_, 0, _) ->
-    error;
-% one element left nothing to match
-pairs([_H], _, Map) ->
-    Map;
-pairs([32, X | T], G, Map) ->
-    pairs([X | T], G, Map);
-pairs([H | T], G, Map) ->
-    M = make_pairs(H, lists:sublist(T, G), Map),
-    pairs(T, G, M).
-
 print(List) when is_list(List) ->
     F = fun({X, Y, Z}, _) -> io:format("{~c, ~c} => ~w~n", [X, Y, Z]) end,
     lists:foldl(F, 0, List);
@@ -82,13 +67,23 @@ print(Map) when is_map(Map) ->
     maps:fold(F, 0, Map).
 
 
+% We need (char, char) -> N type of a map
+% counts the amount of characters withing distance of gap constant G
+% @todo do we filter whitespace and misc characters (like ')?
+% Matches only forward that is abba => {a, b} => 2, {b, b} => 1, {b, a} => 1, {a, a} => 1
+% Skips whitespace but counts it in to the gap constant (logical distance)
+
 % Returns an unsorted map of {c1, c2} character pair -> value
+% Takes a list of characters i.e. a line
+% returns a map of character pairs
 find_pairs([], _, Map) ->
     Map;
+% ignore spaces
+find_pairs([32, X | T], G, Map) ->
+    find_pairs([X | T], G, Map);
 find_pairs([H | T], G, Map) ->
-    Res = pairs([H | T], G, Map),
-    find_pairs(T, G, Map),
-    Res.
+    Res = make_pairs(H, lists:sublist(T, G), Map),
+    find_pairs(T, G, Res).
 
 find_pairs(List, G) ->
     find_pairs(List, G, #{}).
@@ -101,5 +96,8 @@ find_pairs_file(Filename, G) ->
     % FIXME this only works on UNIX files, need \r and \n\r too
     X = [binary_to_list(Bin) || Bin <- binary:split(Cont,<<"\n">>,[global]),
                            Bin =/= << >>],
-    find_pairs(X, G).
+    % find_pairs works on a single line, so we map over it
+    F = fun (H) -> find_pairs(H, G) end,
+    L = lists:map(F, X),
+    merge(L, #{}).
 

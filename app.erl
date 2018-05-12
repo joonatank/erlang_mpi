@@ -19,24 +19,29 @@ start(Files) ->
     % when we have spawned all the processes we wait for them to finish
     % before outputting results
     % So as data a worker needs: A filename, Pid where to send messages
-    spawner(Files),
+    {_, N} = spawner(Files, 0),
+    io:format("count = ~w~n", [N]),
 
-    % @todo keep a list of workers, we can exit only when we have received data from all
-    % (is there an Erlang way to do this?)
-    loop().
+    % wait for all workers
+    Res = loop(N),
+    % print five most common character pairs from all files
+    io:format("Received all pairs - Print 5 most common: ~n"),
+    pairs:print(pairs:take(pairs:sort(Res), 5)).
 
-loop() ->
+% Receive N messages from workers
+% return all results in a single map (unsorted)
+loop(0) -> #{};
+loop(N) ->
     receive
         {pairs, Res} ->
-            io:format("Received pairs (print 5 most common): ~n"),
-            pairs:print(pairs:take(Res, 5))
-    end,
-    loop().
+            % combine previous results into single map
+            pairs:merge(Res, loop(N-1))
+    end.
 
 
-spawner([]) -> ok;
-spawner([H | T]) ->
+spawner([], Count) -> {ok, Count};
+spawner([H | T], Count) ->
     G = 2,
     spawn(app, worker, [self(), H, G]),
-    spawner(T).
+    spawner(T, Count+1).
 
