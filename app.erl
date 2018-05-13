@@ -7,26 +7,34 @@
 
 -module(app).
 
--export([start/1, worker/3]).
+-export([start/1, start/3, worker/3]).
 
 worker(Pid, File, G) ->
     M = pairs:find_pairs_file(File, G),
     Pid ! {pairs, M}.
 
 
-start(Files) ->
+start(InputConfig) ->
+    {_,Cont} = file:read_file(InputConfig),
+    [Gap, K | Files] = pairs:split_lines(Cont),
+    % @todo check that the files exist
+
+    start(Files, list_to_integer(K), list_to_integer(Gap)).
+
+% @todo check for empty files
+start(Files, K, Gap) ->
     % @todo pass the collector PID here (or our pid)
     % when we have spawned all the processes we wait for them to finish
     % before outputting results
     % So as data a worker needs: A filename, Pid where to send messages
-    {_, N} = spawner(Files, 0),
+    {_, N} = spawner(Files, Gap, 0),
     io:format("count = ~w~n", [N]),
 
     % wait for all workers
     Res = loop(N),
     % print five most common character pairs from all files
-    io:format("Received all pairs - Print 5 most common: ~n"),
-    pairs:print(pairs:take(pairs:sort(Res), 5)).
+    io:format("Received all pairs - Print ~w most common: ~n", [K]),
+    pairs:print(pairs:take(pairs:sort(Res), K)).
 
 % Receive N messages from workers
 % return all results in a single map (unsorted)
@@ -39,9 +47,8 @@ loop(N) ->
     end.
 
 
-spawner([], Count) -> {ok, Count};
-spawner([H | T], Count) ->
-    G = 2,
-    spawn(app, worker, [self(), H, G]),
-    spawner(T, Count+1).
+spawner([], _Gap, Count) -> {ok, Count};
+spawner([H | T], Gap, Count) ->
+    spawn(app, worker, [self(), H, Gap]),
+    spawner(T, Gap, Count+1).
 

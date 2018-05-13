@@ -10,7 +10,7 @@
 
 -module(pairs).
 
--export([sort/1, print/1, take/2, merge/2, find_pairs/2, find_pairs_file/2]).
+-export([sort/1, print/1, take/2, merge/2, split_lines/1, find_pairs/2, find_pairs_file/2]).
 
 % Map manipulation functions
 
@@ -88,14 +88,17 @@ find_pairs([H | T], G, Map) ->
 find_pairs(List, G) ->
     find_pairs(List, G, #{}).
 
+split_lines(Cont) ->
+    % FIXME this only works on UNIX files, need \r and \n\r too
+    [binary_to_list(Bin) || Bin <- binary:split(Cont,<<"\n">>,[global]),
+                           Bin =/= << >>].
+
 % @todo this doesn't seem to work properly: test with G=2 and G=5 (oh with G=10 it gives different results
 %   create an artificial test file that we have hand counted.
 find_pairs_file(Filename, G) ->
     % Read file into a list
     {_,Cont} = file:read_file(Filename),
-    % FIXME this only works on UNIX files, need \r and \n\r too
-    X = [binary_to_list(Bin) || Bin <- binary:split(Cont,<<"\n">>,[global]),
-                           Bin =/= << >>],
+    X = split_lines(Cont),
     % find_pairs works on a single line, so we map over it
     F = fun (H) -> find_pairs(H, G) end,
     L = lists:map(F, X),
