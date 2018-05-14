@@ -10,7 +10,7 @@
 
 -module(pairs).
 
--export([sort/1, print/1, take/2, merge/1, merge/2, split_lines/1, find_pairs/2, find_pairs_file/2]).
+-export([sort/1, print/1, file_print/3, take/2, merge/1, merge/2, split_lines/1, find_pairs/2, find_pairs_file/2]).
 
 % Map manipulation functions
 
@@ -54,19 +54,31 @@ make_pairs(X, [32 | T], Map) ->
 make_pairs(X, [H | T], M) ->
     Pair = {X, H},
     Map = make_pairs(X, T, M),
-    case maps:find(Pair, Map) of
-        {ok, Val} ->
-            Map#{Pair := Val+1};
-        error ->
-            Map#{Pair => 1}
-    end.
+    % @todo this was a waste since we only take one occurance per line
+    %case maps:find(Pair, Map) of
+    %    {ok, Val} ->
+    %        Map#{Pair := Val+1};
+    %    error ->
+    %        Map#{Pair => 1}
+    %end.
+    Map#{Pair => 1}.
 
+% pretify our list/map printing
 print(List) when is_list(List) ->
     F = fun({X, Y, Z}, _) -> io:format("{~c, ~c} => ~w~n", [X, Y, Z]) end,
     lists:foldl(F, 0, List);
 print(Map) when is_map(Map) ->
     F = fun({X, Y}, V, _) -> io:format("{~c, ~c} => ~w~n", [X, Y, V]) end,
     maps:fold(F, 0, Map).
+
+% not a map print since we need to use List {a, b, N} for outputs (need most common elements).
+file_print(_File, [], _) -> ok;
+file_print(File, [H | T], TotalLines) ->
+    % format function
+    {X, Y, Z} = H,
+    io:format(File, "~c ~c ~w ~w~n", [X, Y, Z, TotalLines]),
+    file_print(File, T, TotalLines).
+
 
 
 % We need (char, char) -> N type of a map
@@ -108,8 +120,8 @@ find_pairs_file(Filename, G) ->
             % find_pairs works on a single line, so we map over it
             F = fun (H) -> find_pairs(H, G) end,
             L = lists:map(F, X),
-            {ok, merge(L, #{})};
+            {ok, merge(L, #{}), length(X)};
         false ->
-            {error, #{}}
+            {error, #{}, 0}
     end.
 
