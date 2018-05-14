@@ -1,3 +1,12 @@
+% @author Joonatan Kuosa (joonatan.kuosa@gmail.com) 425555
+% @date 2018-05-07
+%
+% Coursework for Advanced functional programming 2018 at UTA
+%
+% Under a copyleft, do what you want.
+%
+% Tests for pairs module
+
 
 -module(pairs_tests).
 
