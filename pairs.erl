@@ -97,12 +97,19 @@ split_lines(Cont) ->
 
 % @todo this doesn't seem to work properly: test with G=2 and G=5 (oh with G=10 it gives different results
 %   create an artificial test file that we have hand counted.
+%
+% Returns {ok, Map} whit no errors and {error, #{}} for errors.
 find_pairs_file(Filename, G) ->
-    % Read file into a list
-    {_,Cont} = file:read_file(Filename),
-    X = split_lines(Cont),
-    % find_pairs works on a single line, so we map over it
-    F = fun (H) -> find_pairs(H, G) end,
-    L = lists:map(F, X),
-    merge(L, #{}).
+    case filelib:is_regular(Filename) of
+        true ->
+            % Read file into a list
+            {_,Cont} = file:read_file(Filename),
+            X = split_lines(Cont),
+            % find_pairs works on a single line, so we map over it
+            F = fun (H) -> find_pairs(H, G) end,
+            L = lists:map(F, X),
+            {ok, merge(L, #{})};
+        false ->
+            {error, #{}}
+    end.
 

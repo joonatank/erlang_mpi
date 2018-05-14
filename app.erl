@@ -9,19 +9,35 @@
 
 -export([start/1, start/3, worker/3]).
 
+% Gracefully handles non-existing files by propagating the error and ignoring the faulty file.
 worker(Pid, File, G) ->
-    M = pairs:find_pairs_file(File, G),
-    Pid ! {pairs, M}.
+    {Res, M} = pairs:find_pairs_file(File, G),
+    Pid ! {pairs, M},
+    % Not a very nice way of doing error handling, but print it and propagate
+    case Res of
+        error ->
+            io:format("ERROR: find_pairs_file, incorrect file: ~s~n", [File]),
+            error;
+        ok ->
+            ok
+    end.
 
 
 start(InputConfig) ->
-    {_,Cont} = file:read_file(InputConfig),
-    [Gap, K | Files] = pairs:split_lines(Cont),
-    % @todo check that the files exist
+    % check that file exists
+    case filelib:is_regular(InputConfig) of
+        true ->
+            {_,Cont} = file:read_file(InputConfig),
+            [Gap, K | Files] = pairs:split_lines(Cont),
 
-    start(Files, list_to_integer(K), list_to_integer(Gap)).
+            start(Files, list_to_integer(K), list_to_integer(Gap));
+        false ->
+            % @todo proper errors/exceptions
+            io:format("ERROR: incorrect input file: ~s~n", [InputConfig]),
+            error
+    end.
 
-% @todo check for empty files
+% Non-existing files are handled upstream
 start(Files, K, Gap) ->
     % @todo pass the collector PID here (or our pid)
     % when we have spawned all the processes we wait for them to finish
