@@ -10,7 +10,7 @@
 
 -module(pairs).
 
--export([sort/1, print/1, take/2, merge/2, split_lines/1, find_pairs/2, find_pairs_file/2]).
+-export([sort/1, print/1, take/2, merge/1, merge/2, split_lines/1, find_pairs/2, find_pairs_file/2]).
 
 % Map manipulation functions
 
@@ -37,9 +37,11 @@ take(Map, N) ->
 merge(M1, M2) when not is_list(M1) ->
     maps:fold(fun(K, V, Map) -> maps:update_with(K, fun(X) -> X + V end, V, Map) end, M1, M2);
 % list of maps merge
-merge([], Map) -> #{};
+merge([], Map) -> Map;
 merge([H | T], Map) ->
     merge(H, merge(T, Map)).
+
+merge(L) when is_list(L) -> merge(L, #{}).
 
 make_pairs(_, [], M) ->
     M;
